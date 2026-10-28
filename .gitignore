@@ -1,0 +1,20 @@
+# build output
+bin/
+obj/
+PUBLISH/
+*.exe
+.vs/
+*.user
+
+# never commit local settings, secrets or captured data
+.env
+*.env
+config.json
+config.*.json
+history.json
+snapshots/
+logs/
+*.log
+appsettings.*.json
+
+_to_delete/

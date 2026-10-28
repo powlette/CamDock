@@ -1,0 +1,136 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows10.0.17763.0</TargetFramework>
+    <SupportedOSPlatformVersion>10.0.17763.0</SupportedOSPlatformVersion>
+    <UseWindowsForms>true</UseWindowsForms>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <LangVersion>latest</LangVersion>
+    <RootNamespace>CamDock</RootNamespace>
+    <AssemblyName>CamDock</AssemblyName>
+    <ApplicationIcon>Resources\app.ico</ApplicationIcon>
+    <ApplicationHighDpiMode>PerMonitorV2</ApplicationHighDpiMode>
+    <ApplicationVisualStyles>true</ApplicationVisualStyles>
+
+    <!-- Windows x64, self-contained single-file exe -->
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <PlatformTarget>x64</PlatformTarget>
+    <SelfContained>true</SelfContained>
+    <PublishSingleFile>true</PublishSingleFile>
+    <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
+    <!-- LibVLC loads its plugins from disk: bundle them and let the host extract them once (cached) -->
+    <IncludeAllContentForSelfExtract>true</IncludeAllContentForSelfExtract>
+    <VlcWindowsX64Enabled>true</VlcWindowsX64Enabled>
+    <VlcWindowsX86Enabled>false</VlcWindowsX86Enabled>
+    <EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
+    <!-- Allows building from non-Windows machines / CI as well -->
+    <EnableWindowsTargeting>true</EnableWindowsTargeting>
+
+    <!-- Keep the wrapper lean: workstation GC without the background GC thread -->
+    <ServerGarbageCollection>false</ServerGarbageCollection>
+    <ConcurrentGarbageCollection>false</ConcurrentGarbageCollection>
+    <TieredPGO>true</TieredPGO>
+    <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+    <PublishReferencesDocumentationFiles>false</PublishReferencesDocumentationFiles>
+
+    <Product>CamDock</Product>
+    <AssemblyTitle>CamDock</AssemblyTitle>
+    <Description>Lightweight desktop camera windows for UniFi Protect</Description>
+    <Company>Jody Powlette</Company>
+    <Copyright>Copyright © 2026</Copyright>
+    <Version>1.0.0</Version>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)' == 'Release'">
+    <DebugType>none</DebugType>
+    <DebugSymbols>false</DebugSymbols>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="LibVLCSharp.WinForms" Version="3.9.7.1" />
+    <PackageReference Include="VideoLAN.LibVLC.Windows" Version="3.0.21" />
+    <PackageReference Include="Microsoft.Toolkit.Uwp.Notifications" Version="7.1.3" />
+    <PackageReference Include="System.Security.Cryptography.ProtectedData" Version="8.0.0" />
+  </ItemGroup>
+
+  <!-- Only the LibVLC parts needed for RTSP/RTSPS live playback (decoders, demuxers, D3D video, audio out) -->
+  <ItemGroup>
+    <VlcWindowsX64IncludeFiles Include="libvlc.dll" />
+    <VlcWindowsX64IncludeFiles Include="libvlccore.dll" />
+    <VlcWindowsX64IncludeFiles Include="plugins\access\liblive555_plugin.dll" />
+    <VlcWindowsX64IncludeFiles Include="plugins\access\librtp_plugin.dll" />
+    <VlcWindowsX64IncludeFiles Include="plugins\access\libtcp_plugin.dll" />
+    <VlcWindowsX64IncludeFiles Include="plugins\access\libudp_plugin.dll" />
+    <VlcWindowsX64IncludeFiles Include="plugins\access\libhttp_plugin.dll" />
+    <VlcWindowsX64IncludeFiles Include="plugins\access\libhttps_plugin.dll" />
+    <VlcWindowsX64IncludeFiles Include="plugins\access\libfilesystem_plugin.dll" />
+    <VlcWindowsX64IncludeFiles Include="plugins\access\libaccess_imem_plugin.dll" />
+    <VlcWindowsX64IncludeFiles Include="plugins\audio_filter\%2A" />
+    <VlcWindowsX64IncludeFiles Include="plugins\audio_mixer\%2A" />
+    <VlcWindowsX64IncludeFiles Include="plugins\audio_output\%2A" />
+    <VlcWindowsX64IncludeFiles Include="plugins\codec\%2A" />
+    <VlcWindowsX64IncludeFiles Include="plugins\d3d11\%2A" />
+    <VlcWindowsX64IncludeFiles Include="plugins\d3d9\%2A" />
+    <VlcWindowsX64IncludeFiles Include="plugins\demux\%2A" />
+    <VlcWindowsX64IncludeFiles Include="plugins\misc\%2A" />
+    <VlcWindowsX64IncludeFiles Include="plugins\packetizer\%2A" />
+    <VlcWindowsX64IncludeFiles Include="plugins\video_chroma\%2A" />
+    <VlcWindowsX64IncludeFiles Include="plugins\video_filter\%2A" />
+    <VlcWindowsX64IncludeFiles Include="plugins\video_output\%2A" />
+    <VlcWindowsX64IncludeFiles Include="plugins\logger\%2A" />
+    <VlcWindowsX64IncludeFiles Include="plugins\keystore\%2A" />
+    <VlcWindowsX64IncludeFiles Include="plugins\stream_filter\%2A" />
+  </ItemGroup>
+  <!-- Codecs Protect never sends (VP8/9, AV1, subtitles, images, encoders, legacy audio) -->
+  <ItemGroup>
+    <VlcWindowsX64ExcludeFiles Include="plugins\codec\libvpx_plugin.dll" />
+    <VlcWindowsX64ExcludeFiles Include="plugins\codec\liblibass_plugin.dll" />
+    <VlcWindowsX64ExcludeFiles Include="plugins\codec\libaom_plugin.dll" />
+    <VlcWindowsX64ExcludeFiles Include="plugins\codec\libdav1d_plugin.dll" />
+    <VlcWindowsX64ExcludeFiles Include="plugins\codec\libx26410b_plugin.dll" />
+    <VlcWindowsX64ExcludeFiles Include="plugins\codec\libx264_plugin.dll" />
+    <VlcWindowsX64ExcludeFiles Include="plugins\codec\libx265_plugin.dll" />
+    <VlcWindowsX64ExcludeFiles Include="plugins\codec\libzvbi_plugin.dll" />
+    <VlcWindowsX64ExcludeFiles Include="plugins\codec\libschroedinger_plugin.dll" />
+    <VlcWindowsX64ExcludeFiles Include="plugins\codec\libvorbis_plugin.dll" />
+    <VlcWindowsX64ExcludeFiles Include="plugins\codec\libsdl_image_plugin.dll" />
+    <VlcWindowsX64ExcludeFiles Include="plugins\codec\libtheora_plugin.dll" />
+    <VlcWindowsX64ExcludeFiles Include="plugins\codec\libkate_plugin.dll" />
+    <VlcWindowsX64ExcludeFiles Include="plugins\codec\libspeex_plugin.dll" />
+    <VlcWindowsX64ExcludeFiles Include="plugins\codec\libflac_plugin.dll" />
+    <VlcWindowsX64ExcludeFiles Include="plugins\codec\libtelx_plugin.dll" />
+    <VlcWindowsX64ExcludeFiles Include="plugins\codec\libsvcdsub_plugin.dll" />
+    <VlcWindowsX64ExcludeFiles Include="plugins\codec\libcc_plugin.dll" />
+    <VlcWindowsX64ExcludeFiles Include="plugins\codec\libdvbsub_plugin.dll" />
+    <VlcWindowsX64ExcludeFiles Include="plugins\codec\libscte27_plugin.dll" />
+    <VlcWindowsX64ExcludeFiles Include="plugins\codec\libsubsdec_plugin.dll" />
+    <VlcWindowsX64ExcludeFiles Include="plugins\codec\libsubstx3g_plugin.dll" />
+    <VlcWindowsX64ExcludeFiles Include="plugins\codec\libsubsusf_plugin.dll" />
+    <VlcWindowsX64ExcludeFiles Include="plugins\codec\libcvdsub_plugin.dll" />
+    <VlcWindowsX64ExcludeFiles Include="plugins\codec\libspudec_plugin.dll" />
+    <VlcWindowsX64ExcludeFiles Include="plugins\codec\libtextst_plugin.dll" />
+    <VlcWindowsX64ExcludeFiles Include="plugins\codec\libttml_plugin.dll" />
+    <VlcWindowsX64ExcludeFiles Include="plugins\codec\libwebvtt_plugin.dll" />
+    <VlcWindowsX64ExcludeFiles Include="plugins\codec\libaribsub_plugin.dll" />
+    <VlcWindowsX64ExcludeFiles Include="plugins\codec\libjpeg_plugin.dll" />
+    <VlcWindowsX64ExcludeFiles Include="plugins\codec\libpng_plugin.dll" />
+    <VlcWindowsX64ExcludeFiles Include="plugins\codec\libsvgdec_plugin.dll" />
+    <VlcWindowsX64ExcludeFiles Include="plugins\codec\libt140_plugin.dll" />
+    <VlcWindowsX64ExcludeFiles Include="plugins\codec\libfluidsynth_plugin.dll" />
+    <VlcWindowsX64ExcludeFiles Include="plugins\codec\libmpg123_plugin.dll" />
+    <VlcWindowsX64ExcludeFiles Include="plugins\codec\libtwolame_plugin.dll" />
+    <VlcWindowsX64ExcludeFiles Include="plugins\codec\libshine_plugin.dll" />
+    <VlcWindowsX64ExcludeFiles Include="plugins\codec\libdca_plugin.dll" />
+    <VlcWindowsX64ExcludeFiles Include="plugins\codec\liba52_plugin.dll" />
+    <VlcWindowsX64ExcludeFiles Include="plugins\codec\libfaad_plugin.dll" />
+    <VlcWindowsX64ExcludeFiles Include="plugins\codec\libdvdsub_plugin.dll" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="Resources\app.ico" LogicalName="app.ico" />
+  </ItemGroup>
+
+</Project>
