@@ -64,6 +64,8 @@ internal sealed class CameraWindow : Form
     public string CameraId { get; }
     public string CameraName { get; private set; }
     public bool IsPopup => _popup;
+    public bool IsPlaying => _playing;
+    public ContextMenuStrip Menu => _menu;
 
     private int BorderPx => _fullSize ? 0 : LogicalToDeviceUnits(5);
 

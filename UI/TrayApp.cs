@@ -5,7 +5,7 @@ using CamDock.Core;
 namespace CamDock.UI;
 
 /// <summary>The application: tray icon + camera windows. There is no main window.</summary>
-internal sealed class TrayApp : ApplicationContext
+internal sealed partial class TrayApp : ApplicationContext
 {
     private static Icon? _icon;
     public static Icon AppIcon => _icon ??= LoadIcon();
@@ -117,6 +117,7 @@ internal sealed class TrayApp : ApplicationContext
             OpenCamera(id, bringForward: false, nameHint: st.Name);
 
         await RefreshCamerasAsync(force: true);
+        if (TryStartCapture()) return;
 
         if (showWelcome)
             _tray.ShowBalloonTip(8000, "CamDock is running",
@@ -678,6 +679,7 @@ internal sealed class TrayApp : ApplicationContext
     /// <summary>The exe was launched again while running: surface what we have instead of starting twice.</summary>
     public void OnSecondInstance()
     {
+        if (TryStartCapture()) return;
         if (_windows.Count > 0) BringAllForward();
         else ShowTrayMenu();
         _tray.ShowBalloonTip(4000, "CamDock", "Already running — use the tray icon to choose cameras.", ToolTipIcon.Info);

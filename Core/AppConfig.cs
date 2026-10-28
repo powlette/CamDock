@@ -103,11 +103,24 @@ internal sealed class AppConfig
 
     // ---- global hotkeys
     public bool HotkeysEnabled { get; set; } = true;
-    public string HotkeyToggleAll { get; set; } = "Win+Alt+C";
-    public string HotkeyDoorbell { get; set; } = "Win+Alt+D";
-    public string HotkeySnooze { get; set; } = "Win+Alt+S";
-    public string HotkeyHistory { get; set; } = "Win+Alt+H";
-    public string HotkeySnapshot { get; set; } = "Win+Alt+P";
+    // Ctrl+Alt+Shift combos: Win+Alt+… collide with Windows 11 (Win+Alt+D = clock/calendar) and Game Bar.
+    public string HotkeyToggleAll { get; set; } = "Ctrl+Alt+Shift+C";
+    public string HotkeyDoorbell { get; set; } = "Ctrl+Alt+Shift+D";
+    public string HotkeySnooze { get; set; } = "Ctrl+Alt+Shift+S";
+    public string HotkeyHistory { get; set; } = "Ctrl+Alt+Shift+H";
+    public string HotkeySnapshot { get; set; } = "Ctrl+Alt+Shift+P";
+
+    /// <summary>Move shortcuts still set to the old Win+Alt defaults onto the new defaults.</summary>
+    public void MigrateHotkeys()
+    {
+        static string M(string v, string oldDefault, string newDefault) =>
+            string.Equals(v, oldDefault, StringComparison.OrdinalIgnoreCase) ? newDefault : v;
+        HotkeyToggleAll = M(HotkeyToggleAll, "Win+Alt+C", "Ctrl+Alt+Shift+C");
+        HotkeyDoorbell = M(HotkeyDoorbell, "Win+Alt+D", "Ctrl+Alt+Shift+D");
+        HotkeySnooze = M(HotkeySnooze, "Win+Alt+S", "Ctrl+Alt+Shift+S");
+        HotkeyHistory = M(HotkeyHistory, "Win+Alt+H", "Ctrl+Alt+Shift+H");
+        HotkeySnapshot = M(HotkeySnapshot, "Win+Alt+P", "Ctrl+Alt+Shift+P");
+    }
 
     // ---- quality by window size / idle
     public bool AutoQuality { get; set; } = true;
@@ -212,6 +225,7 @@ internal static class ConfigStore
             var cfg = JsonSerializer.Deserialize<AppConfig>(File.ReadAllText(path), JsonOptions) ?? new AppConfig();
             cfg.Notifications ??= new();
             cfg.Windows ??= new();
+            cfg.MigrateHotkeys();
             // Snapshot folder default from before the rename
             var oldDefault = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyPictures), "UniFi Protect");
             if (string.Equals(cfg.SnapshotFolder, oldDefault, StringComparison.OrdinalIgnoreCase) && !Directory.Exists(oldDefault))

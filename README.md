@@ -4,7 +4,47 @@
 
 A lightweight native Windows viewer for UniFi Protect, written in C# (.NET 8, WinForms). Each camera plays its Protect RTSP stream through LibVLC, using hardware decoding and drawing straight into its window. The app has no main window: it lives in the tray, and each camera you tick there opens as its own borderless, snapping desktop window.
 
-## Build
+## Download
+
+Get **`CamDock.exe`** from the [latest release](https://github.com/powlette/CamDock/releases/latest) and run it. There's nothing to install: it's a single self-contained file for Windows 10 (1809+) and Windows 11 x64. CamDock isn't code-signed, so SmartScreen may warn the first time; choose **More info › Run anyway**.
+
+## Screenshots
+
+**A camera on the desktop.** Borderless and resizable, it snaps to screen edges and to other camera windows, with mouse-wheel zoom.
+
+![Camera window](docs/screenshots/camera-front-door.png)
+
+**Doorbell pop-up.** When someone rings, the doorbell's live window pops up on top with a red border. The doorbell menu sends a quick reply to its screen.
+
+| Doorbell pop-up | Doorbell menu |
+|---|---|
+| ![Doorbell pop-up](docs/screenshots/doorbell-popup.png) | ![Doorbell window menu](docs/screenshots/doorbell-menu.png) |
+
+**Tray and camera menus.** Tick the cameras you want, snooze alerts, open history and settings. Each camera has its own right-click menu.
+
+| Tray menu | Alerts submenu | Camera menu |
+|---|---|---|
+| ![Tray menu](docs/screenshots/tray-menu.png) | ![Tray alerts menu](docs/screenshots/tray-alerts.png) | ![Camera menu](docs/screenshots/camera-menu.png) |
+
+**Setup and settings**
+
+| First-run setup | Connection and streams |
+|---|---|
+| ![Setup](docs/screenshots/setup.png) | ![Settings – Connection](docs/screenshots/settings-1-connection.png) |
+
+| Notifications per camera | Pop-ups, quiet hours and doorbell replies |
+|---|---|
+| ![Settings – Notifications](docs/screenshots/settings-2-notifications.png) | ![Settings – Pop-ups and quiet hours](docs/screenshots/settings-3-pop-ups--quiet-hours.png) |
+
+| Shortcuts, quality and idle | General |
+|---|---|
+| ![Settings – Desktop](docs/screenshots/settings-4-desktop.png) | ![Settings – General](docs/screenshots/settings-5-general.png) |
+
+**Alert history** (the last 24 hours, with snapshots)
+
+![Alert history](docs/screenshots/alert-history.png)
+
+## Build from source
 
 Requirements on the build PC: **.NET 8 SDK** (x64).
 
@@ -86,13 +126,13 @@ The app subscribes to the devices websocket (`/subscribe/devices`), which also k
 
 | Shortcut | Action |
 |---|---|
-| Win+Alt+C | Hide / show all cameras (hidden cameras stop streaming) |
-| Win+Alt+D | Pop up the doorbell |
-| Win+Alt+S | Snooze alerts 30 min / resume |
-| Win+Alt+H | Alert history |
-| Win+Alt+P | Save a snapshot of the camera under the mouse |
+| Ctrl+Alt+Shift+C | Hide / show all cameras (hidden cameras stop streaming) |
+| Ctrl+Alt+Shift+D | Pop up the doorbell |
+| Ctrl+Alt+Shift+S | Snooze alerts 30 min / resume |
+| Ctrl+Alt+Shift+H | Alert history |
+| Ctrl+Alt+Shift+P | Save a snapshot of the camera under the mouse |
 
-Change these or turn them off in Settings › Desktop. If another app already uses a shortcut, Settings says so.
+Change these or turn them off in Settings › Desktop. If another app already uses a shortcut, Settings says so. Shortcuts saved with the old Win+Alt defaults move to these automatically, because Windows 11 itself uses some of them.
 
 ### Quality by window size and idle cameras
 
@@ -102,11 +142,11 @@ Change these or turn them off in Settings › Desktop. If another app already us
 
 ### Alert history
 
-Tray › **Alert history** (Win+Alt+H) lists the last 24 hours of alerts with a snapshot of each. That includes alerts held by snooze or quiet hours, and detections that aren't set to notify (plain motion appears only where it's enabled). You can filter by camera, event type, or "only alerts I wasn't notified about". Double-click an alert to watch live; right-click to open, copy or save its picture. The history survives restarts; the API has no history of its own, so it only covers time the app was running.
+Tray › **Alert history** (Ctrl+Alt+Shift+H) lists the last 24 hours of alerts with a snapshot of each. That includes alerts held by snooze or quiet hours, and detections that aren't set to notify (plain motion appears only where it's enabled). You can filter by camera, event type, or "only alerts I wasn't notified about". Double-click an alert to watch live; right-click to open, copy or save its picture. The history survives restarts; the API has no history of its own, so it only covers time the app was running.
 
 ### Snapshots
 
-Right-click a camera › **Save snapshot** or **Copy snapshot**, or press Win+Alt+P over a camera. Snapshots are full-quality JPEGs from the camera, saved by default to `Pictures\CamDock` (change it in Settings › Desktop).
+Right-click a camera › **Save snapshot** or **Copy snapshot**, or press Ctrl+Alt+Shift+P over a camera. Snapshots are full-quality JPEGs from the camera, saved by default to `Pictures\CamDock` (change it in Settings › Desktop).
 
 ## Lightweight by design
 
@@ -141,6 +181,7 @@ Core/VlcHost.cs             shared LibVLC instance
 Core/Native.cs              Win32 interop, run-at-startup (HKCU\...\Run)
 Core/Log.cs                 paths + rolling file log
 UI/TrayApp.cs               tray icon/menu, window management
+UI/TrayApp.Capture.cs       screenshot mode for the docs
 UI/CameraWindow.cs          borderless snapping camera window, player, zoom, overlays, context menu
 UI/SetupForm.cs             first-run dialog
 UI/SettingsForm.cs          settings (connection + streams, notifications, general)
@@ -149,7 +190,22 @@ UI/Dialogs.cs               error dialogs
 UI/InputDialog.cs           custom doorbell message prompt
 UI/HistoryForm.cs           alert history window
 Resources/app.ico           app / tray icon
+docs/screenshots/           README images
+.github/workflows/release.yml  tag → build → GitHub Release
 ```
+
+## Releases
+
+Releases are built by GitHub Actions (`.github/workflows/release.yml`). Pushing a version tag builds `CamDock.exe` on Windows and publishes it to a GitHub Release, together with a SHA-256 checksum:
+
+```
+git tag v1.0.0
+git push origin v1.0.0
+```
+
+### Refreshing the screenshots
+
+Create an empty `capture-screenshots.txt` next to `CamDock.exe`, then start CamDock (or start it again while it's running). It captures its own windows into `docs/screenshots`, writes `capture-done.txt`, and deletes the trigger file. Nothing outside CamDock's windows is recorded.
 
 ## Upgrading from "UniFi Protect Viewer"
 

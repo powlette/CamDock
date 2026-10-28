@@ -1,0 +1,63 @@
+name: Release
+
+# Push a tag like v1.0.0 to build CamDock.exe and publish it as a GitHub Release.
+# Can also be run by hand from the Actions tab (builds the exe as a downloadable artifact).
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+
+      - name: Set version from tag
+        id: ver
+        shell: pwsh
+        run: |
+          $v = if ($env:GITHUB_REF_TYPE -eq 'tag') { $env:GITHUB_REF_NAME.TrimStart('v') } else { '0.0.0-dev' }
+          "version=$v" >> $env:GITHUB_OUTPUT
+
+      - name: Publish self-contained exe
+        shell: pwsh
+        run: >
+          dotnet publish CamDock.csproj -c Release -r win-x64 --self-contained true
+          -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true
+          -p:Version=${{ steps.ver.outputs.version }} -o PUBLISH
+
+      - name: Checksum
+        shell: pwsh
+        run: |
+          $h = (Get-FileHash PUBLISH/CamDock.exe -Algorithm SHA256).Hash.ToLower()
+          "$h  CamDock.exe" | Out-File -Encoding ascii PUBLISH/CamDock.exe.sha256
+          Write-Host "SHA256: $h"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: CamDock-${{ steps.ver.outputs.version }}
+          path: |
+            PUBLISH/CamDock.exe
+            PUBLISH/CamDock.exe.sha256
+
+      - name: Create GitHub Release
+        if: github.ref_type == 'tag'
+        uses: softprops/action-gh-release@v2
+        with:
+          name: CamDock ${{ github.ref_name }}
+          generate_release_notes: true
+          files: |
+            PUBLISH/CamDock.exe
+            PUBLISH/CamDock.exe.sha256
+          body: |
+            **Download `CamDock.exe` below and run it.** No install needed: it's a single self-contained Windows x64 app (Windows 10 1809 or later).
+
+            Windows SmartScreen may warn that the app is unrecognised, because it isn't code-signed. Choose **More info → Run anyway**.

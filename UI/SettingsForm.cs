@@ -5,6 +5,7 @@ namespace CamDock.UI;
 internal sealed class SettingsForm : Form
 {
     private readonly TrayApp _app;
+    public TabControl Tabs { get; private set; } = null!;
     private readonly ConnectionPanel _conn = new() { Dock = DockStyle.Top, AutoSize = true };
     private readonly Label _current = new() { AutoSize = true, Dock = DockStyle.Top, Padding = new Padding(0, 0, 0, 10) };
     private readonly ComboBox _quality = new() { DropDownStyle = ComboBoxStyle.DropDownList, Width = 120 };
@@ -52,12 +53,12 @@ internal sealed class SettingsForm : Form
         Icon = TrayApp.AppIcon;
         AutoScaleMode = AutoScaleMode.Dpi;
         StartPosition = FormStartPosition.CenterScreen;
-        ClientSize = new Size(760, 600);
-        MinimumSize = new Size(640, 520);
+        ClientSize = new Size(920, 720);
+        MinimumSize = new Size(760, 600);
         MaximizeBox = false;
         ShowInTaskbar = true;
 
-        var tabs = new TabControl { Dock = DockStyle.Fill };
+        var tabs = Tabs = new TabControl { Dock = DockStyle.Fill };
         tabs.TabPages.Add(BuildConnectionTab());
         tabs.TabPages.Add(BuildNotificationsTab());
         tabs.TabPages.Add(BuildAlertsTab());
@@ -247,7 +248,7 @@ internal sealed class SettingsForm : Form
         }
         var hint = new Label
         {
-            Text = "Write shortcuts like Win+Alt+C or Ctrl+Shift+F9. Leave a box empty to turn that shortcut off.",
+            Text = "Write shortcuts like Ctrl+Alt+Shift+C or Ctrl+Shift+F9. Leave a box empty to turn that shortcut off.",
             AutoSize = true, ForeColor = SystemColors.GrayText, MaximumSize = new Size(660, 0), Margin = new Padding(3, 6, 3, 0),
         };
         hg.Controls.Add(hint, 0, rows.Length + 1);
@@ -423,7 +424,7 @@ internal sealed class SettingsForm : Form
             {
                 if (tb.Text.Trim().Length > 0 && !Hotkeys.TryParse(tb.Text, out _, out _))
                 {
-                    Dialogs.Warn("Settings not saved", $"\"{tb.Text}\" isn't a valid shortcut. Use a form like Win+Alt+C, or leave it empty.");
+                    Dialogs.Warn("Settings not saved", $"\"{tb.Text}\" isn't a valid shortcut. Use a form like Ctrl+Alt+Shift+C, or leave it empty.");
                     return;
                 }
             }
