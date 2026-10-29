@@ -90,7 +90,7 @@ When a camera window opens, the app asks the Integration API for the camera's st
 | Camera window: edges | Resize. The aspect ratio is kept; hold **Shift** for a free shape |
 | Double-click | Full size on that monitor (Esc or double-click to restore) |
 | Mouse wheel | Digital zoom toward the pointer, up to 8x. Drag pans while zoomed; Ctrl+drag moves the window; middle-click resets |
-| Right-click | Doorbell message (doorbells), Listen (audio), Always on top, Lock position, Quality, Size 320/480/640/960, Snap to corner, Full size, Reset zoom, Reconnect, Settings, Close |
+| Right-click | Doorbell message (doorbells), Listen (audio), Always on top, Lock position, Play sound on motion, Quality, Size 320/480/640/960, Snap to corner, Full size, Reset zoom, Reconnect, Settings, Close |
 
 Open windows, positions, sizes, quality, on-top, lock and mute state are saved and restored at next launch. If a monitor disappears, windows move to the primary screen and return when the monitor comes back.
 
@@ -144,6 +144,12 @@ Change these or turn them off in Settings › Desktop. If another app already us
 
 Tray › **Alert history** (Ctrl+Alt+Shift+H) lists the last 24 hours of alerts with a snapshot of each. That includes alerts held by snooze or quiet hours, and detections that aren't set to notify (plain motion appears only where it's enabled). You can filter by camera, event type, or "only alerts I wasn't notified about". Double-click an alert to watch live; right-click to open, copy or save its picture. The history survives restarts; the API has no history of its own, so it only covers time the app was running.
 
+### Motion sound
+
+Right-click a camera › **Play sound on motion** to hear a sound whenever that camera reports motion or a smart detection (person, vehicle, animal, …), even with notifications off. Each camera has its own toggle, and the sound plays only while that camera's window is open.
+
+Pick the sound in Settings › Desktop › **Motion sound**: a Windows sound, any of the sounds in `C:\Windows\Media`, or your own `.wav` (**Browse…**). **▶ Test** plays it. By default it plays at most once every 10 seconds per camera, and it stays silent while alerts are snoozed or in quiet hours; both can be changed.
+
 ### Snapshots
 
 Right-click a camera › **Save snapshot** or **Copy snapshot**, or press Ctrl+Alt+Shift+P over a camera. Snapshots are full-quality JPEGs from the camera, saved by default to `Pictures\CamDock` (change it in Settings › Desktop).
@@ -178,6 +184,7 @@ Core/AlertHistory.cs        24-hour alert history (history.json + snapshots)
 Core/Hotkeys.cs             global keyboard shortcuts
 Core/Notifier.cs            event → Windows toast (snapshot, Watch live, cooldown)
 Core/VlcHost.cs             shared LibVLC instance
+Core/MotionSound.cs         per-camera motion sound (cooldown, .wav / Windows sounds)
 Core/Native.cs              Win32 interop, run-at-startup (HKCU\...\Run)
 Core/Log.cs                 paths + rolling file log
 UI/TrayApp.cs               tray icon/menu, window management

@@ -32,6 +32,7 @@ internal sealed partial class TrayApp : ApplicationContext
     private bool _allHidden;
 
     public AlertHistory History { get; } = new();
+    public MotionSound MotionSound { get; } = new();
     public List<string> HotkeyErrors { get; } = new();
     private List<CameraInfo> _cameras = new();
     private DateTime _camerasFetched = DateTime.MinValue;
@@ -148,7 +149,11 @@ internal sealed partial class TrayApp : ApplicationContext
         _events = new EventListener(_api.EventsWebSocketUri, key, _ui);
         _events.EventReceived += ev =>
         {
-            if (ev.DeviceId != null && _windows.TryGetValue(ev.DeviceId, out var w)) w.NotifyActivity();
+            if (ev.DeviceId != null && _windows.TryGetValue(ev.DeviceId, out var w))
+            {
+                w.NotifyActivity();
+                MotionSound.Handle(ev, Config); // only while the camera's window is open
+            }
             _notifier.Handle(ev);
         };
         _events.ConnectionChanged += _ => OnStreamConnectionChanged();
@@ -721,6 +726,7 @@ internal sealed partial class TrayApp : ApplicationContext
         _offlineTimer.Stop();
         _idleTimer.Stop();
         _hotkeys.Dispose();
+        MotionSound.Dispose();
         _historyForm?.Close();
         foreach (var w in _windows.Values.ToList()) w.Close();
         _settings?.Close();

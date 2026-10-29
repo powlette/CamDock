@@ -24,6 +24,7 @@ internal sealed class CameraWindow : Form
     private CancellationTokenSource? _startCts;
     private string? _quality;            // quality actually playing
     private string? _requestedQuality;   // quality we asked for
+    private string? _qualityNote;        // why the playing quality differs from the requested one
     private readonly System.Windows.Forms.Timer _qualityTimer = new() { Interval = 1200 };
 
     // idle / hidden
@@ -116,7 +117,7 @@ internal sealed class CameraWindow : Form
         _overlay.BringToFront();
 
         _menu = new ContextMenuStrip { ShowImageMargin = false, ShowCheckMargin = true };
-        _menu.Opening += (_, _) => PopulateMenu(_menu);
+        _menu.Opening += (_, _) => { NotifyActivity(); PopulateMenu(_menu); };
 
         _retryTimer = new System.Windows.Forms.Timer();
         _retryTimer.Tick += (_, _) => { _retryTimer.Stop(); Restart(); };
@@ -203,6 +204,7 @@ internal sealed class CameraWindow : Form
         _startCts?.Cancel();
         var cts = _startCts = new CancellationTokenSource();
         _playing = false;
+        _quality = null;
         ShowLoading($"Connecting to {CameraName}…");
 
         var api = _app.Api;
@@ -218,6 +220,11 @@ internal sealed class CameraWindow : Form
             var stream = await api.GetStreamAsync(CameraId, _requestedQuality, _app.Config.EncryptedStreams, cts.Token);
             if (cts.IsCancellationRequested || IsDisposed) return;
             _quality = stream.Quality;
+            _qualityNote = stream.Quality == _requestedQuality ? null
+                : $"{Cap(_requestedQuality)} isn't available for this camera, so {Cap(stream.Quality)} is playing. " +
+                  $"Turn on its {Cap(_requestedQuality)} RTSPS stream in Protect (camera › Settings › Advanced), " +
+                  "or use an API key with write access so CamDock can turn it on.";
+            if (_qualityNote != null) Log.Warn($"[{CameraName}] {_qualityNote}");
             Log.Info($"[{CameraName}] playing {stream.Quality} stream {Mask(stream.PlayUrl)}");
 
             var options = new List<string>
@@ -249,6 +256,8 @@ internal sealed class CameraWindow : Form
     }
 
     private int LogicalWidth => (int)Math.Round(Width * 96.0 / Math.Max(96, DeviceDpi));
+
+    private static string Cap(string? q) => string.IsNullOrEmpty(q) ? "" : char.ToUpper(q[0]) + q[1..];
 
     private string WantedQuality() => _idleLow ? "low" : _app.Config.QualityFor(CameraId, LogicalWidth, _fullSize);
 
@@ -472,6 +481,7 @@ internal sealed class CameraWindow : Form
         c.MouseDown += OnVideoMouseDown;
         c.MouseMove += OnVideoMouseMove;
         c.MouseUp += OnVideoMouseUp;
+        c.MouseWheel += (_, e) => NotifyActivity();
         c.MouseWheel += (_, e) => ZoomAt(PointToVideo(c, e.Location), e.Delta > 0 ? 1.25 : 0.8);
     }
 
@@ -481,6 +491,7 @@ internal sealed class CameraWindow : Form
     {
         if (_popup && e.Button == MouseButtons.Left) Pin(); // interacting keeps it
         if (_idlePaused && e.Button == MouseButtons.Left) { NotifyActivity(); return; }
+        NotifyActivity(); // using the window counts as activity: an idle window returns to its chosen quality
         if (e.Button == MouseButtons.Middle) { ResetZoom(); return; }
         if (e.Button != MouseButtons.Left) return;
 
@@ -590,8 +601,43 @@ internal sealed class CameraWindow : Form
         m.Items.Add(Check("Listen (audio)", !_state.Muted, () => SetMuted(!_state.Muted)));
         m.Items.Add(Check("Always on top", _state.TopMost, () => { _state.TopMost = !_state.TopMost; TopMost = _state.TopMost; _app.SaveSoon(); }));
         m.Items.Add(Check("Lock position", _state.Locked, () => { _state.Locked = !_state.Locked; _app.SaveSoon(); }));
+        m.Items.Add(Check("Play sound on motion", _state.MotionSound, () =>
+        {
+            _state.MotionSound = !_state.MotionSound;
+            _app.SaveSoon();
+            Log.Info($"[{CameraName}] motion sound {(_state.MotionSound ? "on" : "off")}");
+            if (_state.MotionSound) _app.MotionSound.Play(_app.Config.MotionSoundFile); // preview
+        }));
 
-        var quality = new ToolStripMenuItem("Quality" + (_quality != null ? $" ({_quality})" : ""));
+        var chosen = _app.Config.QualityFor(CameraId, LogicalWidth, _fullSize);
+        string qLabel, qNote;
+        if (_idleLow)
+        {
+            qLabel = $"Quality: {Cap(chosen)} (Low while idle)";
+            qNote = $"No activity for {_app.Config.IdleMinutes} min, so the Low stream is playing. It returns to {Cap(chosen)} on the next event, or when you click the window.";
+        }
+        else if (_quality == null)
+        {
+            qLabel = $"Quality: {Cap(chosen)} (connecting…)";
+            qNote = "";
+        }
+        else if (_qualityNote != null)
+        {
+            qLabel = $"Quality: {Cap(_requestedQuality)} ({Cap(_quality)} in use)";
+            qNote = _qualityNote;
+        }
+        else
+        {
+            qLabel = $"Quality: {Cap(_quality)}";
+            qNote = "";
+        }
+        var quality = new ToolStripMenuItem(qLabel) { ToolTipText = qNote.Length > 0 ? qNote : null };
+        if (qNote.Length > 0)
+        {
+            quality.DropDownItems.Add(new ToolStripMenuItem(qNote.Length > 90 ? qNote[..qNote.IndexOf(". ", StringComparison.Ordinal)] + "." : qNote)
+                { Enabled = false, ToolTipText = qNote });
+            quality.DropDownItems.Add(new ToolStripSeparator());
+        }
         var fixedQ = _state.Quality;
         if (_app.Config.AutoQuality)
             quality.DropDownItems.Add(new ToolStripMenuItem("Auto (by window size)", null, (_, _) => SetQuality(null)) { Checked = fixedQ == null });

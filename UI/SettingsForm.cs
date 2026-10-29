@@ -44,6 +44,11 @@ internal sealed class SettingsForm : Form
     private readonly ComboBox _idleMode = new() { DropDownStyle = ComboBoxStyle.DropDownList, Width = 260 };
     private readonly TextBox _snapFolder = new() { Width = 420 };
 
+    private sealed record SoundItem(string Key, string Label) { public override string ToString() => Label; }
+    private readonly ComboBox _motionSound = new() { DropDownStyle = ComboBoxStyle.DropDownList, Width = 360 };
+    private readonly NumericUpDown _motionCooldown = new() { Minimum = 0, Maximum = 600, Width = 60 };
+    private readonly CheckBox _motionQuiet = new() { Text = "Stay silent while alerts are snoozed or in quiet hours", AutoSize = true };
+
     private readonly CheckBox _startup = new() { Text = "Run CamDock when I sign in to Windows", AutoSize = true };
 
     public SettingsForm(TrayApp app)
@@ -277,6 +282,42 @@ internal sealed class SettingsForm : Form
         perf.Controls.Add(pf);
         flow.Controls.Add(perf);
 
+        var ms = new GroupBox { Text = "Motion sound", AutoSize = true, Padding = new Padding(8), MinimumSize = new Size(680, 0) };
+        var mf = new FlowLayoutPanel { Dock = DockStyle.Fill, FlowDirection = FlowDirection.TopDown, AutoSize = true, WrapContents = false };
+        var pick = new FlowLayoutPanel { AutoSize = true };
+        pick.Controls.Add(new Label { Text = "Sound:", AutoSize = true, Margin = new Padding(3, 6, 3, 0) });
+        pick.Controls.Add(_motionSound);
+        var browseWav = new Button { Text = "Browse…", AutoSize = true };
+        browseWav.Click += (_, _) =>
+        {
+            using var dlg = new OpenFileDialog { Filter = "Wave sounds (*.wav)|*.wav", Title = "Choose a motion sound" };
+            if (dlg.ShowDialog(this) != DialogResult.OK) return;
+            SelectSound(dlg.FileName);
+        };
+        pick.Controls.Add(browseWav);
+        var test = new Button { Text = "▶ Test", AutoSize = true };
+        test.Click += (_, _) =>
+        {
+            if (_motionSound.SelectedItem is SoundItem si && _app.MotionSound.Play(si.Key) is { } err)
+                Dialogs.Warn("Couldn't play the sound", err);
+        };
+        pick.Controls.Add(test);
+        mf.Controls.Add(pick);
+        var mc = new FlowLayoutPanel { AutoSize = true };
+        mc.Controls.Add(new Label { Text = "Play at most once every", AutoSize = true, Margin = new Padding(3, 6, 3, 0) });
+        mc.Controls.Add(_motionCooldown);
+        mc.Controls.Add(new Label { Text = "seconds per camera", AutoSize = true, Margin = new Padding(3, 6, 3, 0) });
+        mf.Controls.Add(mc);
+        mf.Controls.Add(_motionQuiet);
+        mf.Controls.Add(new Label
+        {
+            Text = "Turn the sound on for a camera from its window's right-click menu › Play sound on motion. It plays for motion " +
+                   "and smart detections (person, vehicle, …) while that camera's window is open. Any .wav file can be used.",
+            AutoSize = true, ForeColor = SystemColors.GrayText, MaximumSize = new Size(660, 0),
+        });
+        ms.Controls.Add(mf);
+        flow.Controls.Add(ms);
+
         var snap = new GroupBox { Text = "Snapshots", AutoSize = true, Padding = new Padding(8), MinimumSize = new Size(680, 0) };
         var sf = new FlowLayoutPanel { Dock = DockStyle.Fill, AutoSize = true };
         sf.Controls.Add(new Label { Text = "Save to:", AutoSize = true, Margin = new Padding(3, 6, 3, 0) });
@@ -297,6 +338,19 @@ internal sealed class SettingsForm : Form
         };
         page.Controls.Add(flow);
         return page;
+    }
+
+    /// <summary>Selects a sound in the list, adding it as "Custom: name" if it's a file not already listed.</summary>
+    private void SelectSound(string? key)
+    {
+        if (string.IsNullOrEmpty(key)) { if (_motionSound.Items.Count > 0) _motionSound.SelectedIndex = 0; return; }
+        var existing = _motionSound.Items.OfType<SoundItem>().FirstOrDefault(i => string.Equals(i.Key, key, StringComparison.OrdinalIgnoreCase));
+        if (existing == null)
+        {
+            existing = new SoundItem(key, "Custom: " + Path.GetFileNameWithoutExtension(key));
+            _motionSound.Items.Add(existing);
+        }
+        _motionSound.SelectedItem = existing;
     }
 
     private TabPage BuildGeneralTab()
@@ -365,6 +419,11 @@ internal sealed class SettingsForm : Form
         _idleMinutes.Value = Math.Clamp(cfg.IdleMinutes, 0, 240);
         _idleMode.SelectedIndex = cfg.IdleMode == "pause" ? 1 : 0;
         _snapFolder.Text = cfg.SnapshotFolder;
+        foreach (var (key, label) in MotionSound.SystemSoundChoices) _motionSound.Items.Add(new SoundItem(key, label));
+        foreach (var f in MotionSound.WindowsMediaSounds()) _motionSound.Items.Add(new SoundItem(f, Path.GetFileNameWithoutExtension(f)));
+        SelectSound(cfg.MotionSoundFile);
+        _motionCooldown.Value = Math.Clamp(cfg.MotionSoundCooldownSeconds, 0, 600);
+        _motionQuiet.Checked = cfg.MotionSoundRespectsQuiet;
 
         var cams = _app.Cameras.Count > 0
             ? _app.Cameras.Select(c => (Id: c.Id, Name: c.Name)).ToList()
@@ -436,6 +495,9 @@ internal sealed class SettingsForm : Form
             updated.IdleMinutes = (int)_idleMinutes.Value;
             updated.IdleMode = _idleMode.SelectedIndex == 1 ? "pause" : "low";
             updated.SnapshotFolder = _snapFolder.Text.Trim();
+            if (_motionSound.SelectedItem is SoundItem chosen) updated.MotionSoundFile = chosen.Key;
+            updated.MotionSoundCooldownSeconds = (int)_motionCooldown.Value;
+            updated.MotionSoundRespectsQuiet = _motionQuiet.Checked;
 
             _grid.EndEdit();
             foreach (DataGridViewRow r in _grid.Rows)

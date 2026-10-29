@@ -41,7 +41,7 @@
     <Description>Lightweight desktop camera windows for UniFi Protect</Description>
     <Company>Jody Powlette</Company>
     <Copyright>Copyright © 2026</Copyright>
-    <Version>1.0.0</Version>
+    <Version>1.0.1</Version>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)' == 'Release'">

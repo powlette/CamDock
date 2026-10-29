@@ -50,6 +50,8 @@ internal sealed class CameraWindowState
     public bool TopMost { get; set; }
     public bool Locked { get; set; }
     public bool Muted { get; set; } = true;
+    /// <summary>Play the motion sound when this camera reports motion (while its window is open).</summary>
+    public bool MotionSound { get; set; }
     /// <summary>Stream quality for this window (high / medium / low); null = app default.</summary>
     public string? Quality { get; set; }
 
@@ -130,6 +132,15 @@ internal sealed class AppConfig
     public string IdleMode { get; set; } = "low";
 
     // ---- snapshots
+    // ---- motion sound
+    /// <summary>"system:Asterisk|Beep|Exclamation|Hand|Question", or a path to a .wav file.</summary>
+    public string MotionSoundFile { get; set; } =
+        Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), "Media", "Windows Notify System Generic.wav");
+    /// <summary>Don't play the sound again for the same camera within this many seconds.</summary>
+    public int MotionSoundCooldownSeconds { get; set; } = 10;
+    /// <summary>Respect snooze and quiet hours for the motion sound.</summary>
+    public bool MotionSoundRespectsQuiet { get; set; } = true;
+
     public string SnapshotFolder { get; set; } = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyPictures), "CamDock");
 
     public Dictionary<string, CameraNotifySettings> Notifications { get; set; } = new();
