@@ -203,7 +203,7 @@ docs/screenshots/           README images
 
 ## Releases
 
-Releases are built by GitHub Actions (`.github/workflows/release.yml`). Pushing a version tag builds `CamDock.exe` on Windows and publishes it to a GitHub Release, together with a SHA-256 checksum:
+Releases are built by GitHub Actions (`.github/workflows/release.yml`). Pushing a version tag (or a branch named `release/v1.2.3`, in which case the workflow creates the tag) builds `CamDock.exe` on Windows and publishes it to a GitHub Release, together with a SHA-256 checksum:
 
 ```
 git tag v1.0.0
